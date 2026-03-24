@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>My Training Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080810; --surface: #0f0f1a; --border: #1a1a2e; --border2: #111120;
+    --green: #4ade80; --blue: #60a5fa; --pink: #f472b6; --slate: #64748b;
+    --slate2: #475569; --text: #e2e8f0; --text2: #94a3b8;
+    --yellow: #fbbf24; --purple: #a78bfa; --orange: #fb923c; --teal: #38bdf8;
+    --red: #f87171;
+  }
+  html { font-size: 16px; }
+  body { font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+  .header { padding: 40px 20px 24px; border-bottom: 1px solid var(--border2); position: relative; overflow: hidden; }
+  .header::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:radial-gradient(circle, rgba(74,222,128,0.06) 0%, transparent 70%); pointer-events:none; }
+  .header-eyebrow { font-size: 9px; letter-spacing: 0.2em; color: var(--green); margin-bottom: 8px; }
+  .header-title { font-family: 'Syne', sans-serif; font-size: clamp(32px,9vw,48px); font-weight: 800; line-height: 0.95; color: #f8fafc; margin-bottom: 10px; }
+  .header-sub { font-size: 10px; color: var(--slate2); letter-spacing: 0.06em; line-height: 1.8; }
+  .goal-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.2); border-radius:20px; padding:5px 12px; font-size:10px; color:var(--blue); margin-top:14px; letter-spacing:0.05em; }
+
+  .week-strip { display:flex; gap:6px; padding:16px 20px; overflow-x:auto; border-bottom:1px solid var(--border2); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .week-strip::-webkit-scrollbar { display:none; }
+  .day-chip { flex-shrink:0; text-align:center; min-width:48px; }
+  .day-chip-label { font-size:9px; letter-spacing:0.1em; color:var(--slate2); margin-bottom:5px; }
+  .day-chip-inner { background:var(--surface); border-radius:8px; padding:8px 5px; border-width:1px; border-style:solid; }
+  .day-chip-name { font-size:11px; font-weight:500; margin-bottom:2px; }
+  .day-chip-tag { font-size:7px; color:var(--slate); letter-spacing:0.05em; }
+
+  .tabs { display:flex; gap:0; border-bottom:1px solid var(--border2); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { flex-shrink:0; background:transparent; border:none; border-bottom:2px solid transparent; color:var(--slate); padding:14px 16px; cursor:pointer; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.1em; transition:all 0.2s; white-space:nowrap; }
+  .tab.active { color:var(--green); border-bottom-color:var(--green); }
+  .tab:hover:not(.active) { color:var(--text2); }
+
+  .content { padding:20px; max-width:600px; margin:0 auto; }
+  .section-eyebrow { font-size:9px; letter-spacing:0.18em; color:var(--slate2); margin-bottom:4px; text-transform:uppercase; }
+  .section-title { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; margin-bottom:4px; }
+  .section-sub { font-size:10px; color:var(--slate); margin-bottom:20px; line-height:1.7; }
+
+  /* DAY CARDS */
+  .day-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:12px; }
+  .day-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  .day-label { font-size:9px; letter-spacing:0.15em; text-transform:uppercase; font-weight:500; margin-bottom:3px; }
+  .day-name { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:#f1f5f9; line-height:1; }
+  .day-type { font-size:10px; color:var(--slate); margin-top:3px; }
+  .pill { display:inline-block; padding:3px 8px; border-radius:20px; font-size:8px; letter-spacing:0.1em; white-space:nowrap; }
+
+  .timeline { margin-top:14px; border-top:1px solid var(--border2); padding-top:14px; }
+  .timeline-label { font-size:9px; letter-spacing:0.12em; color:var(--slate2); margin-bottom:10px; text-transform:uppercase; }
+  .tl-row { display:flex; gap:10px; margin-bottom:6px; align-items:flex-start; }
+  .tl-time { flex-shrink:0; width:48px; font-size:10px; color:var(--slate2); padding-top:5px; }
+  .tl-bar { height:28px; border-radius:5px; display:flex; align-items:center; padding:0 10px; font-size:9px; letter-spacing:0.05em; font-weight:500; flex:1; }
+  .tl-bar.buffer { background:rgba(100,116,139,0.08); border:1px dashed rgba(100,116,139,0.2); color:var(--slate); }
+  .tl-bar.deadline { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.25); color:var(--red); }
+  .tl-bar.meeting { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); color:var(--yellow); }
+  .tl-bar.free { background:rgba(74,222,128,0.05); border:1px dashed rgba(74,222,128,0.2); color:var(--green); }
+  .wake-tag { display:inline-flex; align-items:center; gap:6px; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); border-radius:6px; padding:6px 12px; font-size:10px; color:var(--yellow); margin-bottom:14px; }
+
+  /* MONDAY BLOCKS */
+  .block-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:12px; }
+  .block-name { font-size:9px; letter-spacing:0.15em; font-weight:500; text-transform:uppercase; margin-bottom:2px; }
+  .block-dur { font-size:9px; color:var(--slate); margin-bottom:10px; }
+  .block-note { font-size:10px; color:var(--slate); background:rgba(255,255,255,0.02); border:1px solid var(--border2); border-radius:6px; padding:8px 12px; margin-bottom:12px; line-height:1.7; }
+  .ex-row { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border2); align-items:flex-start; }
+  .ex-row:last-child { border-bottom:none; }
+  .ex-dot { width:5px; height:5px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .ex-name { font-size:12px; font-weight:500; color:#e2e8f0; margin-bottom:2px; }
+  .ex-detail { font-size:10px; color:var(--slate); }
+
+  /* RUNNING TABLE */
+  .run-header { display:grid; grid-template-columns:1fr 62px 62px; gap:8px; padding:10px 12px; background:rgba(255,255,255,0.02); border-radius:6px; font-size:9px; letter-spacing:0.12em; color:var(--slate2); text-transform:uppercase; margin-bottom:4px; }
+  .run-row { display:grid; grid-template-columns:1fr 62px 62px; gap:8px; padding:11px 12px; border-bottom:1px solid var(--border2); align-items:center; border-radius:4px; transition: background 0.15s; }
+  .run-row:last-child { border-bottom:none; }
+  .run-row:hover { background: rgba(255,255,255,0.02); }
+  .run-row.milestone { background:rgba(96,165,250,0.04); border-bottom:1px solid rgba(96,165,250,0.1); }
+  .run-row.goal { background:rgba(74,222,128,0.05); border:1px solid rgba(74,222,128,0.2) !important; border-radius:8px; margin-top:4px; }
+  .run-week { font-size:10px; font-weight:500; color:#f1f5f9; }
+  .run-dates { font-size:8px; color:#334155; margin-top:1px; }
+  .run-dist { font-size:15px; font-weight:500; text-align:center; }
+  .run-new { font-size:7px; letter-spacing:0.1em; margin-top:1px; text-align:center; }
+  .info-box { border-radius:8px; padding:14px 16px; font-size:10px; line-height:1.8; margin-bottom:16px; }
+
+  .panel { display:none; }
+  .panel.active { display:block; animation:fadeUp 0.3s ease forwards; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">TRAINING PLAN · 2026</div>
+  <div class="header-title">YOUR<br>WEEKLY<br>PROGRAM</div>
+  <div class="header-sub">GYM: WED · FRI · SAT &nbsp;·&nbsp; HOME: MON &nbsp;·&nbsp; RUN: TUE · THU</div>
+  <div class="goal-badge">🎯 4 miles by Sep 5</div>
+</div>
+
+<div class="week-strip">
+  <div class="day-chip"><div class="day-chip-label">MON</div><div class="day-chip-inner" style="border-color:rgba(74,222,128,0.25)"><div class="day-chip-name" style="color:#4ade80">Home</div><div class="day-chip-tag">MOBILITY</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">TUE</div><div class="day-chip-inner" style="border-color:rgba(96,165,250,0.25)"><div class="day-chip-name" style="color:#60a5fa">Run</div><div class="day-chip-tag">EASY</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">WED</div><div class="day-chip-inner" style="border-color:rgba(244,114,182,0.25)"><div class="day-chip-name" style="color:#f472b6">Lower</div><div class="day-chip-tag">GYM</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">THU</div><div class="day-chip-inner" style="border-color:rgba(96,165,250,0.25)"><div class="day-chip-name" style="color:#60a5fa">Run</div><div class="day-chip-tag">EASY</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">FRI</div><div class="day-chip-inner" style="border-color:rgba(244,114,182,0.25)"><div class="day-chip-name" style="color:#f472b6">Full Body</div><div class="day-chip-tag">GYM</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">SAT</div><div class="day-chip-inner" style="border-color:rgba(244,114,182,0.25)"><div class="day-chip-name" style="color:#f472b6">Upper</div><div class="day-chip-tag">GYM</div></div></div>
+  <div class="day-chip"><div class="day-chip-label">SUN</div><div class="day-chip-inner" style="border-color:rgba(100,116,139,0.2)"><div class="day-chip-name" style="color:#64748b">Rest</div><div class="day-chip-tag">RECOVER</div></div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('overview',this)">OVERVIEW</button>
+  <button class="tab" onclick="switchTab('monday',this)">MONDAY</button>
+  <button class="tab" onclick="switchTab('running',this)">RUNNING</button>
+</div>
+
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#4ade80">Monday</div><div class="day-name">Home Workout</div><div class="day-type">Mobility + Strength · ~45 min</div></div>
+        <span class="pill" style="background:rgba(74,222,128,0.1);color:#4ade80;border:1px solid rgba(74,222,128,0.25)">~45 min</span>
+      </div>
+      <div class="wake-tag">⏰ Wake up by 7:00 AM</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block</div>
+        <div class="tl-row"><div class="tl-time">7:00</div><div class="tl-bar workout" style="background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.25);color:#4ade80;">🏠 Home workout</div></div>
+        <div class="tl-row"><div class="tl-time">7:45</div><div class="tl-bar buffer">Shower + ready</div></div>
+        <div class="tl-row"><div class="tl-time">8:30</div><div class="tl-bar meeting">📅 First meeting</div></div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#60a5fa">Tuesday</div><div class="day-name">Run</div><div class="day-type">Easy pace · starts at 1 mi</div></div>
+        <span class="pill" style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.25)">see plan</span>
+      </div>
+      <div class="wake-tag">⏰ Wake up by 7:00 AM</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block</div>
+        <div class="tl-row"><div class="tl-time">7:00</div><div class="tl-bar run" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);color:#60a5fa;">🏃 Run</div></div>
+        <div class="tl-row"><div class="tl-time">7:30</div><div class="tl-bar buffer">Shower + ready</div></div>
+        <div class="tl-row"><div class="tl-time">8:30</div><div class="tl-bar meeting">📅 First meeting</div></div>
+        <div style="font-size:9px;color:var(--slate);margin-top:8px;">⚠ When runs hit 3+ miles (~30 min), move wake-up to 6:45</div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#f472b6">Wednesday</div><div class="day-name">Lower — Gym</div><div class="day-type">Alpha Progression · ~60 min</div></div>
+        <span class="pill" style="background:rgba(244,114,182,0.1);color:#f472b6;border:1px solid rgba(244,114,182,0.25)">early start</span>
+      </div>
+      <div class="wake-tag">⏰ Wake up by 5:15 AM</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block</div>
+        <div class="tl-row"><div class="tl-time">5:15</div><div class="tl-bar buffer">Wake up + drive</div></div>
+        <div class="tl-row"><div class="tl-time">5:35</div><div class="tl-bar workout" style="background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.25);color:#f472b6;">🏋️ Lower (gym)</div></div>
+        <div class="tl-row"><div class="tl-time">6:35</div><div class="tl-bar drive" style="background:rgba(244,114,182,0.07);border:1px solid rgba(244,114,182,0.15);color:#f472b6;">🚗 Drive home</div></div>
+        <div class="tl-row"><div class="tl-time">6:55</div><div class="tl-bar buffer">Quick change</div></div>
+        <div class="tl-row"><div class="tl-time">7:15</div><div class="tl-bar deadline">🚌 Girls on bus ✓</div></div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#60a5fa">Thursday</div><div class="day-name">Run</div><div class="day-type">Easy pace · leads Tuesday</div></div>
+        <span class="pill" style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.25)">see plan</span>
+      </div>
+      <div class="wake-tag">⏰ Wake up by 7:00 AM</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block</div>
+        <div class="tl-row"><div class="tl-time">7:00</div><div class="tl-bar run" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);color:#60a5fa;">🏃 Run (slightly longer)</div></div>
+        <div class="tl-row"><div class="tl-time">7:35</div><div class="tl-bar buffer">Shower + ready</div></div>
+        <div class="tl-row"><div class="tl-time">8:30</div><div class="tl-bar meeting">📅 First meeting</div></div>
+        <div style="font-size:9px;color:var(--slate);margin-top:8px;">⚠ When runs hit 3.5+ miles, move wake-up to 6:45</div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#f472b6">Friday</div><div class="day-name">Full Body — Gym</div><div class="day-type">Alpha Progression · ~60–70 min</div></div>
+        <span class="pill" style="background:rgba(244,114,182,0.1);color:#f472b6;border:1px solid rgba(244,114,182,0.25)">day off ✓</span>
+      </div>
+      <div class="wake-tag">⏰ No rush — bus first</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block</div>
+        <div class="tl-row"><div class="tl-time">7:15</div><div class="tl-bar deadline">🚌 Girls on bus</div></div>
+        <div class="tl-row"><div class="tl-time">7:20</div><div class="tl-bar drive" style="background:rgba(244,114,182,0.07);border:1px solid rgba(244,114,182,0.15);color:#f472b6;">🚗 Drive to gym</div></div>
+        <div class="tl-row"><div class="tl-time">7:40</div><div class="tl-bar workout" style="background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.25);color:#f472b6;">🏋️ Full Body (gym)</div></div>
+        <div class="tl-row"><div class="tl-time">8:50</div><div class="tl-bar free">🎉 Rest of day free</div></div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#f472b6">Saturday</div><div class="day-name">Upper — Gym</div><div class="day-type">Alpha Progression · ~60 min</div></div>
+        <span class="pill" style="background:rgba(244,114,182,0.1);color:#f472b6;border:1px solid rgba(244,114,182,0.25)">flexible</span>
+      </div>
+      <div class="wake-tag">⏰ Anytime — no constraints</div>
+      <div class="timeline">
+        <div class="timeline-label">Time Block (suggested)</div>
+        <div class="tl-row"><div class="tl-time">9:00</div><div class="tl-bar drive" style="background:rgba(244,114,182,0.07);border:1px solid rgba(244,114,182,0.15);color:#f472b6;">🚗 Drive to gym</div></div>
+        <div class="tl-row"><div class="tl-time">9:20</div><div class="tl-bar workout" style="background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.25);color:#f472b6;">🏋️ Upper (gym)</div></div>
+        <div class="tl-row"><div class="tl-time">10:20</div><div class="tl-bar free">Rest of weekend ✓</div></div>
+      </div>
+    </div>
+
+    <div class="day-card">
+      <div class="day-card-top">
+        <div><div class="day-label" style="color:#64748b">Sunday</div><div class="day-name">Rest</div><div class="day-type">Full recovery</div></div>
+        <span class="pill" style="background:rgba(100,116,139,0.1);color:#64748b;border:1px solid rgba(100,116,139,0.2)">recover</span>
+      </div>
+      <div style="font-size:10px;color:var(--slate);line-height:1.7;margin-top:4px;">Walk, stretch, sleep. The gains happen here.</div>
+    </div>
+
+  </div>
+
+  <!-- MONDAY WORKOUT -->
+  <div class="panel" id="panel-monday">
+    <div class="section-eyebrow">Monday — Home</div>
+    <div class="section-title" style="color:#4ade80">Run Prep & Mobility</div>
+    <div class="section-sub">KB · Dumbbells · Pull-up Bar · TRX · Bench · Med Ball · Mat &nbsp;·&nbsp; 7:00–7:45 AM</div>
+
+    <div class="block-card">
+      <div class="block-name" style="color:#fbbf24">Warm-Up</div>
+      <div class="block-dur">5 min · 7:00 AM</div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fbbf24"></div><div><div class="ex-name">Leg Swings</div><div class="ex-detail">10 each direction, each leg</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fbbf24"></div><div><div class="ex-name">Hip Circles</div><div class="ex-detail">10 each direction</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fbbf24"></div><div><div class="ex-name">Ankle Circles</div><div class="ex-detail">10 each direction</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fbbf24"></div><div><div class="ex-name">Cat-Cow</div><div class="ex-detail">10 reps on mat</div></div></div>
+    </div>
+
+    <div class="block-card">
+      <div class="block-name" style="color:#4ade80">Block 1 — Glute & Hip Activation</div>
+      <div class="block-dur">~15 min · 7:05 AM</div>
+      <div class="block-note">💡 Primes glutes for Tuesday's run. Light on quads — heavy work comes Wed & Fri.</div>
+      <div class="ex-row"><div class="ex-dot" style="background:#4ade80"></div><div><div class="ex-name">KB Single-Leg Romanian Deadlift</div><div class="ex-detail">3 × 10 each leg — slow and controlled</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#4ade80"></div><div><div class="ex-name">TRX Lateral Lunge</div><div class="ex-detail">3 × 10 each leg — hold TRX for balance</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#4ade80"></div><div><div class="ex-name">Glute Bridge with KB on hips</div><div class="ex-detail">3 × 15 — 2s hold at top</div></div></div>
+    </div>
+
+    <div class="block-card">
+      <div class="block-name" style="color:#a78bfa">Block 2 — Core Stability</div>
+      <div class="block-dur">~12 min · 7:20 AM</div>
+      <div class="block-note">💡 Anti-rotation and bracing — different from crunch/leg raise work at the gym.</div>
+      <div class="ex-row"><div class="ex-dot" style="background:#a78bfa"></div><div><div class="ex-name">Dead Bug</div><div class="ex-detail">3 × 8 each side — lower back stays glued to mat</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#a78bfa"></div><div><div class="ex-name">TRX Plank or Fallout</div><div class="ex-detail">3 × 10–12 — elbows under shoulders</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#a78bfa"></div><div><div class="ex-name">Medicine Ball Slam</div><div class="ex-detail">3 × 10 — full exhale on slam</div></div></div>
+    </div>
+
+    <div class="block-card">
+      <div class="block-name" style="color:#38bdf8">Block 3 — Upper Back & Shoulder Health</div>
+      <div class="block-dur">~10 min · 7:32 AM</div>
+      <div class="block-note">💡 Light pulling for running posture. Low intensity so it doesn't affect Saturday's Upper day.</div>
+      <div class="ex-row"><div class="ex-dot" style="background:#38bdf8"></div><div><div class="ex-name">TRX Row</div><div class="ex-detail">3 × 12 — pause at chest, squeeze scapulae</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#38bdf8"></div><div><div class="ex-name">Scapular Pull-Ups (dead hang)</div><div class="ex-detail">2 × 10 — shoulder blade only, no full pull-up</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#38bdf8"></div><div><div class="ex-name">KB Halo</div><div class="ex-detail">2 × 12 each direction — controlled, core braced</div></div></div>
+    </div>
+
+    <div class="block-card">
+      <div class="block-name" style="color:#fb923c">Cool-Down & Run Prep Mobility</div>
+      <div class="block-dur">~8 min · done by 7:45</div>
+      <div class="block-note">💡 Sets you up for Tuesday's run. Don't skip it.</div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fb923c"></div><div><div class="ex-name">Couch Stretch (hip flexor)</div><div class="ex-detail">60s each side — against wall or bench</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fb923c"></div><div><div class="ex-name">Pigeon Pose</div><div class="ex-detail">60s each side — on mat</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fb923c"></div><div><div class="ex-name">Calf Raises on Step</div><div class="ex-detail">2 × 15 slow — calf & ankle prep</div></div></div>
+      <div class="ex-row"><div class="ex-dot" style="background:#fb923c"></div><div><div class="ex-name">Thoracic Rotation</div><div class="ex-detail">10 each side — seated or kneeling on mat</div></div></div>
+    </div>
+  </div>
+
+  <!-- RUNNING -->
+  <div class="panel" id="panel-running">
+    <div class="section-eyebrow">Tuesday & Thursday</div>
+    <div class="section-title" style="color:#60a5fa">Run Progression</div>
+    <div class="section-sub">Starts at 1 mi · +0.25 mi increments · Thu always leads · Goal: 4 mi by Sep 5</div>
+
+    <div class="info-box" style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.2);color:#60a5fa;margin-bottom:12px;">
+      🎯 <strong>The rule:</strong> Thursday bumps first. Tuesday matches the following week. Never both in the same week.
+    </div>
+    <div class="info-box" style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);color:#94a3b8;">
+      ⏰ <strong>Timing:</strong> Once runs hit 3+ miles, bump wake-up from 7:00 → 6:45 AM on run days.
+    </div>
+
+    <div class="run-header">
+      <div>WEEK</div>
+      <div style="color:#60a5fa;text-align:center;">TUE</div>
+      <div style="color:#34d399;text-align:center;">THU</div>
+    </div>
+
+    <!-- Week 1 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 1</div><div class="run-dates">Mar 24 – Mar 30</div></div>
+      <div class="run-dist" style="color:#60a5fa">1 mi</div>
+      <div class="run-dist" style="color:#34d399">1 mi</div>
+    </div>
+    <!-- Week 2 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 2</div><div class="run-dates">Mar 31 – Apr 6</div></div>
+      <div class="run-dist" style="color:#60a5fa">1 mi</div>
+      <div><div class="run-dist" style="color:#34d399">1.25 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 3 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 3</div><div class="run-dates">Apr 7 – Apr 13</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">1.25 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">1.25 mi</div>
+    </div>
+    <!-- Week 4 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 4</div><div class="run-dates">Apr 14 – Apr 20</div></div>
+      <div class="run-dist" style="color:#60a5fa">1.25 mi</div>
+      <div><div class="run-dist" style="color:#34d399">1.5 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 5 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 5</div><div class="run-dates">Apr 21 – Apr 27</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">1.5 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">1.5 mi</div>
+    </div>
+    <!-- Week 6 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 6</div><div class="run-dates">Apr 28 – May 4</div></div>
+      <div class="run-dist" style="color:#60a5fa">1.5 mi</div>
+      <div><div class="run-dist" style="color:#34d399">1.75 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 7 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 7</div><div class="run-dates">May 5 – May 11</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">1.75 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">1.75 mi</div>
+    </div>
+    <!-- Week 8 -->
+    <div class="run-row milestone">
+      <div><div class="run-week">Week 8</div><div class="run-dates">May 12 – May 18</div></div>
+      <div class="run-dist" style="color:#60a5fa">1.75 mi</div>
+      <div><div class="run-dist" style="color:#34d399">2 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 9 -->
+    <div class="run-row milestone">
+      <div><div class="run-week">Week 9</div><div class="run-dates">May 19 – May 25</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">2 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">2 mi</div>
+    </div>
+    <!-- Week 10 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 10</div><div class="run-dates">May 26 – Jun 1</div></div>
+      <div class="run-dist" style="color:#60a5fa">2 mi</div>
+      <div><div class="run-dist" style="color:#34d399">2.25 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 11 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 11</div><div class="run-dates">Jun 2 – Jun 8</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">2.25 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">2.25 mi</div>
+    </div>
+    <!-- Week 12 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 12</div><div class="run-dates">Jun 9 – Jun 15</div></div>
+      <div class="run-dist" style="color:#60a5fa">2.25 mi</div>
+      <div><div class="run-dist" style="color:#34d399">2.5 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 13 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 13</div><div class="run-dates">Jun 16 – Jun 22</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">2.5 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">2.5 mi</div>
+    </div>
+    <!-- Week 14 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 14</div><div class="run-dates">Jun 23 – Jun 29</div></div>
+      <div class="run-dist" style="color:#60a5fa">2.5 mi</div>
+      <div><div class="run-dist" style="color:#34d399">2.75 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 15 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 15</div><div class="run-dates">Jun 30 – Jul 6</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">2.75 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">2.75 mi</div>
+    </div>
+    <!-- Week 16 -->
+    <div class="run-row milestone">
+      <div><div class="run-week">Week 16</div><div class="run-dates">Jul 7 – Jul 13</div></div>
+      <div class="run-dist" style="color:#60a5fa">2.75 mi</div>
+      <div><div class="run-dist" style="color:#34d399">3 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 17 -->
+    <div class="run-row milestone">
+      <div><div class="run-week">Week 17</div><div class="run-dates">Jul 14 – Jul 20</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">3 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">3 mi</div>
+    </div>
+    <!-- Week 18 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 18</div><div class="run-dates">Jul 21 – Jul 27</div></div>
+      <div class="run-dist" style="color:#60a5fa">3 mi</div>
+      <div><div class="run-dist" style="color:#34d399">3.25 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 19 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 19</div><div class="run-dates">Jul 28 – Aug 3</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">3.25 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">3.25 mi</div>
+    </div>
+    <!-- Week 20 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 20</div><div class="run-dates">Aug 4 – Aug 10</div></div>
+      <div class="run-dist" style="color:#60a5fa">3.25 mi</div>
+      <div><div class="run-dist" style="color:#34d399">3.5 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 21 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 21</div><div class="run-dates">Aug 11 – Aug 17</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">3.5 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">3.5 mi</div>
+    </div>
+    <!-- Week 22 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 22</div><div class="run-dates">Aug 18 – Aug 24</div></div>
+      <div class="run-dist" style="color:#60a5fa">3.5 mi</div>
+      <div><div class="run-dist" style="color:#34d399">3.75 mi</div><div class="run-new" style="color:#34d399">↑ THU UP</div></div>
+    </div>
+    <!-- Week 23 -->
+    <div class="run-row">
+      <div><div class="run-week">Week 23</div><div class="run-dates">Aug 25 – Aug 31</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">3.75 mi</div><div class="run-new" style="color:#60a5fa">↑ TUE UP</div></div>
+      <div class="run-dist" style="color:#34d399">3.75 mi</div>
+    </div>
+    <!-- Week 24 — GOAL -->
+    <div class="run-row goal">
+      <div><div class="run-week" style="color:#4ade80">Week 24 🎯</div><div class="run-dates">Sep 1 – Sep 5</div></div>
+      <div><div class="run-dist" style="color:#60a5fa">3.75 mi</div></div>
+      <div><div class="run-dist" style="color:#4ade80">4 mi</div><div class="run-new" style="color:#4ade80">GOAL ✓</div></div>
+    </div>
+
+    <div style="font-size:9px;color:var(--slate);line-height:1.7;margin-top:12px;padding:12px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px solid var(--border2);">
+      📌 Thursday hits 4 miles on Sep 5 — goal achieved. Tuesday lands at 3.75 that same week and reaches 4 mi the following week. Both are essentially at goal by deadline.
+    </div>
+
+    <div class="info-box" style="background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.2);color:#64748b;margin-top:16px;">
+      <span style="color:#4ade80;font-size:10px;letter-spacing:0.12em;display:block;margin-bottom:8px;">PACE GUIDANCE</span>
+      Easy pace = you can hold a full conversation while running. If you can't, slow down. This isn't about speed — it's about building aerobic base. You ran a 10k in December. Trust that fitness.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(id, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
